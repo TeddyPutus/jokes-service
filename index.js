@@ -7,37 +7,29 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get("/jokes/", async (req, res, next) => {
   try {
-    if (Array.isArray(req.query.tags)) console.log(req.query.tags);
     const jokes = await Joke.findAll(
-      req.query.tags
-        ? Array.isArray(req.query.tags)
-          ? {
-              where: {
-                tags: {
+      {
+        where: {
+          tags: req.query.tags
+            ? Array.isArray(req.query.tags)
+              ? {
                   [Op.or]: req.query.tags.map((tag) => {
                     return { [Op.like]: "%" + tag + "%" };
                   }),
-                },
-                joke: req.query.content
-                  ? { [Op.like]: "%" + req.query.content + "%" }
-                  : { [Op.like]: "%" },
-              },
-            }
-          : {
-              where: {
-                tags: { [Op.like]: "%" + req.query.tags + "%" },
-                joke: req.query.content
-                  ? { [Op.like]: "%" + req.query.content + "%" }
-                  : { [Op.like]: "%" },
-              },
-            }
-        : {
-            where: {
-              joke: req.query.content
-                ? { [Op.like]: "%" + req.query.content + "%" }
-                : { [Op.like]: "%" },
-            },
-          },
+                }
+              : req.query.tags.includes(",")
+              ? {
+                  [Op.or]: req.query.tags.split(",").map((tag) => {
+                    return { [Op.like]: "%" + tag + "%" };
+                  }),
+                }
+              : { [Op.like]: "%" + req.query.tags + "%" }
+            : { [Op.like]: "%" },
+          joke: req.query.content
+            ? { [Op.like]: "%" + req.query.content + "%" }
+            : { [Op.like]: "%" },
+        },
+      },
       {
         attributes: {
           exclude: ["createdAt", "updatedAt"],
